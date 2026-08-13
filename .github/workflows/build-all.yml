@@ -34,18 +34,28 @@ jobs:
       - name: Build Windows NSIS installer
         run: npm run dist
 
-      - name: Upload Windows artifact
+      - name: Rename artifacts for upload
+        run: |
+          cd dist
+          $files = Get-ChildItem -File
+          foreach ($f in $files) {
+            $n = $f.Name -replace ' ', '-'
+            if ($f.Name -ne $n) { Move-Item $f.Name $n -Force }
+          }
+          Get-ChildItem -File | Select-Object Name, Length
+
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: dist/FlyingMouse Format-Setup-0.5.0-x64.exe
+          path: dist/FlyingMouse-Format-Setup-0.5.0-x64.exe
           if-no-files-found: error
 
       - name: Upload Windows blockmap
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: dist/FlyingMouse Format-Setup-0.5.0-x64.exe.blockmap
+          path: dist/FlyingMouse-Format-Setup-0.5.0-x64.exe.blockmap
           if-no-files-found: warn
 
       - name: Upload Windows latest.yml
@@ -67,6 +77,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install system dependencies for AppImage
+        run: sudo apt-get update && sudo apt-get install -y libfuse2
+
       - name: Install dependencies
         run: npm ci
 
@@ -76,18 +89,28 @@ jobs:
       - name: Build Linux deb
         run: npx electron-builder --linux deb --x64 --publish never
 
-      - name: Upload Linux AppImage artifact
+      - name: Rename Linux artifacts
+        run: |
+          cd dist
+          for f in *; do
+            [ -f "$f" ] || continue
+            n="$(echo "$f" | tr ' ' '-')"
+            [ "$f" = "$n" ] || mv "$f" "$n"
+          done
+          ls -la
+
+      - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: dist/*-0.5.0-x64.AppImage
+          path: dist/*0.5.0-x64.AppImage
           if-no-files-found: error
 
-      - name: Upload Linux deb artifact
+      - name: Upload Linux deb
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
-          path: dist/*-0.5.0_amd64.deb
+          path: dist/*0.5.0_amd64.deb
           if-no-files-found: error
 
   build-macos-arm64:
@@ -108,11 +131,20 @@ jobs:
       - name: Build macOS arm64 DMG
         run: npx electron-builder --mac dmg --arm64 --publish never
 
-      - name: Upload macOS arm64 artifact
+      - name: Rename macOS artifact
+        run: |
+          cd dist
+          for f in *; do
+            [ -f "$f" ] || continue
+            n="$(echo "$f" | tr ' ' '-')"
+            [ "$f" = "$n" ] || mv "$f" "$n"
+          done
+
+      - name: Upload macOS arm64
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
-          path: dist/FlyingMouse Format-Setup-0.5.0-mac-arm64.dmg
+          path: dist/FlyingMouse-Format-Setup-0.5.0-mac-arm64.dmg
           if-no-files-found: error
 
   build-macos-x64:
@@ -133,17 +165,27 @@ jobs:
       - name: Build macOS x64 DMG
         run: npx electron-builder --mac dmg --x64 --publish never
 
-      - name: Upload macOS x64 artifact
+      - name: Rename macOS artifact
+        run: |
+          cd dist
+          for f in *; do
+            [ -f "$f" ] || continue
+            n="$(echo "$f" | tr ' ' '-')"
+            [ "$f" = "$n" ] || mv "$f" "$n"
+          done
+
+      - name: Upload macOS x64
         uses: actions/upload-artifact@v4
         with:
           name: macos-x64
-          path: dist/FlyingMouse Format-Setup-0.5.0-mac-x64.dmg
+          path: dist/FlyingMouse-Format-Setup-0.5.0-mac-x64.dmg
           if-no-files-found: error
 
   publish-release:
     name: Publish GitHub Release
     needs: [build-windows, build-linux, build-macos-arm64, build-macos-x64]
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -151,34 +193,33 @@ jobs:
           path: release-assets
           merge-multiple: false
 
-      - name: Rename files (replace spaces with hyphens)
-        run: |
-          cd release-assets
-          for dir in */; do
-            [ -d "$dir" ] || continue
-            cd "$dir"
-            for f in *; do
-              [ -f "$f" ] || continue
-              n="$(echo "$f" | tr ' ' '-')"
-              [ "$f" = "$n" ] || mv "$f" "$n"
-            done
-            cd ..
-          done
+      - name: Show downloaded artifacts
+        run: find release-assets -type f | sort
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.event.inputs.tag || 'v0.5.0' }}"
-          DRAFT="--draft"
-          if [ "${{ github.event.inputs.draft }}" = "false" ]; then DRAFT=""; fi
+          DRAFT=""
+          if [ "${{ github.event.inputs.draft }}" = "true" ]; then DRAFT="--draft"; fi
+
+          ASSETS=()
+          for dir in release-assets/*/; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"*; do
+              [ -f "$f" ] && ASSETS+=("$f")
+            done
+          done
+
+          if [ ${#ASSETS[@]} -eq 0 ]; then
+            echo "No artifacts found, skipping release creation"
+            exit 0
+          fi
+
           gh release create "$TAG" \
             --repo "${{ github.repository }}" \
             --title "FlyingMouse Format $TAG" \
-            --notes "Cross-platform build artifacts." \
+            --notes "Cross-platform build artifacts for $TAG." \
             $DRAFT \
-            release-assets/windows-x64/* \
-            release-assets/linux-appimage/* \
-            release-assets/linux-deb/* \
-            release-assets/macos-arm64/* \
-            release-assets/macos-x64/*
+            "${ASSETS[@]}"
