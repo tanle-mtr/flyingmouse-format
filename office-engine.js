@@ -86,6 +86,7 @@ async function executeWithProfile(command, commandArgs, options = {}) {
       "--nofirststartwizard",
       "--nodefault",
       "--nolockcheck",
+      "--norestore",
       `-env:UserInstallation=${pathToFileURL(profileDir).href}`,
       ...commandArgs
     ];

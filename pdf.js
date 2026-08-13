@@ -129,8 +129,7 @@ td{border:1px solid #999;padding:4px 8px;vertical-align:top}
   }
 
   if (target === "docx") {
-    await convertPdfToDocx(inputPath, outputPath, pages);
-    return;
+    return convertPdfToDocx(inputPath, outputPath, pages);
   }
 
   throw new Error("PDF 暂时只支持转换为 XLSX、TXT、HTML、DOCX、PNG、JPG，或拆分为单页 PDF。");
@@ -224,6 +223,17 @@ ${body.join("\n")}
     { path: "_rels/.rels", content: rels },
     { path: "word/document.xml", content: documentXml }
   ]);
+  return {
+    warnings: [
+      {
+        code: "PDF_DOCX_LAYOUT_LOST",
+        messages: {
+          zhCN: "版式还原引擎不可用或转换失败，已退回纯文字提取；表格和排版可能丢失。",
+          enUS: "Layout-preserving engine unavailable or failed; fell back to text extraction. Tables and layout may be lost."
+        }
+      }
+    ]
+  };
 }
 
 async function splitPdfToZip(inputPath, outputPath) {

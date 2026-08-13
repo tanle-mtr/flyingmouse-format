@@ -505,7 +505,7 @@ app.post("/api/convert", assertLocalWebRequest, upload.single("file"), async (re
         conversionResult = await convertText(file.path, outputPath, inputExt, requestedTarget, originalName);
       }
     } else if (category === "pdf") {
-      await convertPdf(file.path, outputPath, requestedTarget, {
+      conversionResult = await convertPdf(file.path, outputPath, requestedTarget, {
         pdfAction: String(req.body?.pdfAction || ""),
         password: String(req.body?.password || "")
       });
