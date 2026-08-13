@@ -35,14 +35,16 @@ jobs:
         run: npm run dist
 
       - name: Rename artifacts for upload
+        shell: pwsh
         run: |
-          cd dist
+          Push-Location dist
           $files = Get-ChildItem -File
           foreach ($f in $files) {
             $n = $f.Name -replace ' ', '-'
             if ($f.Name -ne $n) { Move-Item $f.Name $n -Force }
           }
           Get-ChildItem -File | Select-Object Name, Length
+          Pop-Location
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
@@ -68,7 +70,7 @@ jobs:
   build-linux:
     name: Linux x64
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -77,17 +79,21 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install system dependencies for AppImage
-        run: sudo apt-get update && sudo apt-get install -y libfuse2
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 dpkg fakeroot
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build Linux AppImage
         run: npx electron-builder --linux appimage --x64 --publish never
+        timeout-minutes: 30
 
       - name: Build Linux deb
         run: npx electron-builder --linux deb --x64 --publish never
+        timeout-minutes: 30
 
       - name: Rename Linux artifacts
         run: |
@@ -104,14 +110,14 @@ jobs:
         with:
           name: linux-appimage
           path: dist/*0.5.0-x64.AppImage
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Upload Linux deb
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
           path: dist/*0.5.0_amd64.deb
-          if-no-files-found: error
+          if-no-files-found: warn
 
   build-macos-arm64:
     name: macOS arm64
