@@ -59,6 +59,7 @@ jobs:
           name: windows-x64
           path: dist/FlyingMouse-Format-Setup-0.5.0-x64.exe.blockmap
           if-no-files-found: warn
+        continue-on-error: true
 
       - name: Upload Windows latest.yml
         uses: actions/upload-artifact@v4
@@ -66,6 +67,7 @@ jobs:
           name: windows-x64
           path: dist/latest.yml
           if-no-files-found: warn
+        continue-on-error: true
 
   build-linux:
     name: Linux x64
