@@ -111,14 +111,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: dist/*0.5.0-x64.AppImage
+          path: dist/*0.5.0-x86_64.AppImage
           if-no-files-found: warn
 
       - name: Upload Linux deb
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
-          path: dist/*0.5.0_amd64.deb
+          path: dist/*0.5.0-amd64.deb
           if-no-files-found: warn
 
   build-macos-arm64:
