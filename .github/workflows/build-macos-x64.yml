@@ -1,0 +1,89 @@
+name: Build macOS x64
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-x64:
+    name: macOS x64
+    runs-on: macos-13
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build macOS x64 DMG
+        run: npx electron-builder --mac dmg --x64 --publish never
+
+      - name: Rename macOS artifact
+        run: |
+          cd dist
+          for f in *; do
+            [ -f "$f" ] || continue
+            n="$(echo "$f" | tr ' ' '-')"
+            [ "$f" = "$n" ] || mv "$f" "$n"
+          done
+
+      - name: Upload macOS x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64
+          path: dist/FlyingMouse-Format-Setup-0.5.0-mac-x64.dmg
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-macos-x64]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: false
+
+      - name: Download previous run artifacts
+        run: |
+          gh run download 31920570462 --repo "${{ github.repository }}" --dir release-assets-prev -n windows-x64 -n windows-blockmap -n windows-latest -n macos-arm64 -n linux-appimage -n linux-deb 2>/dev/null || true
+          if [ -d release-assets-prev ]; then
+            mv release-assets-prev/* release-assets/ 2>/dev/null || true
+          fi
+
+      - name: Show downloaded artifacts
+        run: find release-assets -type f | sort
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v0.5.0"
+          ASSETS=()
+          for dir in release-assets/*/; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"*; do
+              [ -f "$f" ] && ASSETS+=("$f")
+            done
+          done
+
+          if [ ${#ASSETS[@]} -eq 0 ]; then
+            echo "No artifacts found"
+            exit 0
+          fi
+
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "FlyingMouse Format $TAG" \
+            --notes "Cross-platform build artifacts for $TAG." \
+            --draft \
+            "${ASSETS[@]}"
