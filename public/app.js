@@ -109,6 +109,8 @@ const messages = {
     "sponsor.aria": "支持鼠鼠", "sponsor.close": "收起", "sponsor.title": "请鼠鼠吃小鱼干 🐟",
     "sponsor.description": "如果飞鼠格式帮到了你，欢迎请鼠鼠吃根小鱼干～纯自愿，软件永远免费",
     "sponsor.qrAlt": "微信收款码",
+    "sponsor.adapterLabel": "改编者打赏",
+    "sponsor.adapterQrAlt": "改编者收款码",
     "feedback.label": "问题反馈", "feedback.hint": "如需帮助，请反馈至 3465177342@qq.com"
   },
   "en-US": {
