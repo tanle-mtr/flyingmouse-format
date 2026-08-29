@@ -177,4 +177,12 @@ Source code is released under the [MIT License](LICENSE). Bundled third-party co
 FlyingMouse Format is free, offline, and has no ads. If it helped you, you can buy Mouse a dried fish — completely optional. / 飞鼠格式免费、离线、无广告。如果它帮到了你，欢迎请鼠鼠吃根小鱼干，纯自愿。
 
 ![WeChat payment QR / 微信收款码](public/assets/sponsor-qr.jpg)
-![WeChat payment QR / 微信收款码](public/assets/sponsor-qr2.jpg)
+
+## Sponsor / 赞助
+
+原作者的收款码在上方。本 fork 为个人改编版本，改编者亦接受打赏以支持持续维护。
+
+| | |
+|---|---|
+| **原作者（牢蜂）收款码** | ![Original author QR / 原作者收款码](public/assets/sponsor-qr.jpg) |
+| **改编者收款码** | ![Adapter QR / 改编者收款码](public/assets/sponsor-qr2.png) |
